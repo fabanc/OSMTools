@@ -608,11 +608,9 @@ for rel in unbuiltrelations:
         shape.removeAll()
         relid=areawayitems[0]
         members=areawayitems[1].split(':')
-        queryexpression=""""way_id" in ("""
         expecteditems=len(members)
-        for member in members:
-            queryexpression=queryexpression+"'"+str(member)+"',"
-        queryexpression=queryexpression.rstrip(',')+')'
+        querylist = '\',\''.join(members)
+        queryexpression = '"way_id" in (\'{0}\')'.format(querylist)
         actualitems=0
         for row in arcpy.da.SearchCursor(areawayfc,("way_id","SHAPE@"),queryexpression):
             for part in row[1]:
