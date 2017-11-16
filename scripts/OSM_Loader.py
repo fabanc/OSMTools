@@ -234,59 +234,52 @@ def returnID(line):
 
 def buildWays(scratch,blocks):
     nodes={}
-    #areawaycursor=arcpy.da.InsertCursor(areawayfc,("way_id","SHAPE@"))
     completedways = 0
-    counter=0
     #completed features are writen here
-    builtareas=bz2.BZ2File(scratch+'/builtareas.dat','w')
-    builtlines=bz2.BZ2File(scratch+'/builtlines.dat','w')
-    #loop through each block of nodes loaded from file
-    for fs in range(1,blocks+1):
-        nodefile=bz2.BZ2File(scratch+'/nodeblock'+str(fs)+'.dat','r')
-        arcpy.AddMessage('Loading Block ' +str(fs))
+    with bz2.BZ2File(scratch+'/builtareas.dat','w') as builtareas:
+        with bz2.BZ2File(scratch+'/builtlines.dat','w') as builtlines:
+            #loop through each block of nodes loaded from file
+            for fs in range(1,blocks+1):
+                with bz2.BZ2File(scratch+'/nodeblock'+str(fs)+'.dat','r') as nodefile:
+                    arcpy.AddMessage('Loading Block ' +str(fs))
+                    #add nodes to a dictionary
+                    for node in nodefile:
+                        snode=node.rstrip('\n').split(':')
+                        nodes[snode[0]]=(snode[1],snode[2])
 
-        #add nodes to a dictionary
-        for node in nodefile:
-            snode=node.rstrip('\n').split(':')
-            nodes[snode[0]]=(snode[1],snode[2])
-        nodefile.close()
-        arcpy.AddMessage('Searching Block ' +str(fs))
-        unbuiltways=bz2.BZ2File(scratch+'/unbuiltways.dat','r')
-        stillunbuiltways=bz2.BZ2File(scratch+'/stillunbuiltways.dat','w')
-        for way in unbuiltways:
-            wayitems=way.rstrip('\n').rstrip(':').split('#')
-            if len(wayitems) ==2:
-                wayid=wayitems[0]
-                waynodes=wayitems[1].split(':')
-                wayout=str(wayid)+'#'
-                isAllComplete=True
-                for anode in waynodes:
-                    if ' ' in anode:
-                        wayout=wayout+anode+':'
-                    elif anode in nodes:
-                        thenode=nodes[anode]
-                        wayout=wayout+thenode[0]+' '+thenode[1]+':'
-                    else:
-                        isAllComplete=False
-                        wayout=wayout+anode+':'
-                #if a way is complete write it to a seperate file, if not write for next loop
-                if isAllComplete:
-                    finalnodes=wayout.split('#')[1].split(':')
-                    completedways +=1
-                    if finalnodes[0] <> finalnodes[-2]:     #start point is different to end point so its a line
-                        builtlines.write(wayout+'\n')
-                    else:
-                        builtareas.write(wayout+'\n')       #its an area
-                else:
-                    stillunbuiltways.write(wayout+'\n')
-        arcpy.AddMessage("Processed Ways="+str(completedways))
-        nodes.clear()
-        unbuiltways.close()
-        stillunbuiltways.close()
-        os.remove(scratch+'/unbuiltways.dat')
-        os.rename(scratch+'/stillunbuiltways.dat',scratch+'/unbuiltways.dat')
-    builtareas.close()
-    builtlines.close()
+                arcpy.AddMessage('Searching Block ' +str(fs))
+                with bz2.BZ2File(scratch+'/unbuiltways.dat','r') as unbuiltways:
+                    with bz2.BZ2File(scratch+'/stillunbuiltways.dat','w') as stillunbuiltways:
+                        for way in unbuiltways:
+                            wayitems=way.rstrip('\n').rstrip(':').split('#')
+                            if len(wayitems) ==2:
+                                wayid=wayitems[0]
+                                waynodes=wayitems[1].split(':')
+                                wayout=str(wayid)+'#'
+                                isAllComplete=True
+                                for anode in waynodes:
+                                    if ' ' in anode:
+                                        wayout=wayout+anode+':'
+                                    elif anode in nodes:
+                                        thenode=nodes[anode]
+                                        wayout=wayout+thenode[0]+' '+thenode[1]+':'
+                                    else:
+                                        isAllComplete=False
+                                        wayout=wayout+anode+':'
+                                #if a way is complete write it to a seperate file, if not write for next loop
+                                if isAllComplete:
+                                    finalnodes=wayout.split('#')[1].split(':')
+                                    completedways +=1
+                                    if finalnodes[0] <> finalnodes[-2]:     #start point is different to end point so its a line
+                                        builtlines.write(wayout+'\n')
+                                    else:
+                                        builtareas.write(wayout+'\n')       #its an area
+                                else:
+                                    stillunbuiltways.write(wayout+'\n')
+                        arcpy.AddMessage("Processed Ways="+str(completedways))
+                        nodes.clear()
+                os.remove(scratch+'/unbuiltways.dat')
+                os.rename(scratch+'/stillunbuiltways.dat',scratch+'/unbuiltways.dat')
     return completedways
 
 ##--------------------------------------------------------------------------------------
