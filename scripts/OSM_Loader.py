@@ -615,9 +615,12 @@ for rel in unbuiltrelations:
         queryexpression=queryexpression.rstrip(',')+')'
         actualitems=0
         for row in arcpy.da.SearchCursor(areawayfc,("way_id","SHAPE@"),queryexpression):
-            for part in row[1]:
-                shape.add(part)
-            actualitems+=1
+            if row[1] is not None:
+                for part in row[1]:
+                    shape.add(part)
+                actualitems+=1
+            else:
+                arcpy.AddWarning('Geometry for way_id {0} is null'.format(row[0]))
         if actualitems==expecteditems:
             inShape=arcpy.Polygon(shape,SR)
             newrow=(relid,inShape)
@@ -632,9 +635,6 @@ unbuiltrelations.close()
 del areawaycursor
 arcpy.AddMessage("Complete multiAreas="+str(completerels))
 arcpy.AddMessage("Step 6.5 --- %s seconds ---" % (time.time() - stepstarttime))
-
-
-
 
 
 #Step 7 join Attributes to ways
