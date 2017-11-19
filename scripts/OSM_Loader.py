@@ -255,27 +255,27 @@ def buildWays(scratch,blocks):
                             if len(wayitems) ==2:
                                 wayid=wayitems[0]
                                 waynodes=wayitems[1].split(':')
-                                wayout=str(wayid)+'#'
                                 isAllComplete=True
+                                finalnodes = []
                                 for anode in waynodes:
                                     if ' ' in anode:
-                                        wayout=wayout+anode+':'
+                                        finalnodes.append(anode)
                                     elif anode in nodes:
                                         thenode=nodes[anode]
-                                        wayout=wayout+thenode[0]+' '+thenode[1]+':'
+                                        finalnodes.append(thenode[0]+' '+thenode[1])
                                     else:
                                         isAllComplete=False
-                                        wayout=wayout+anode+':'
+                                        finalnodes.append(anode)
                                 #if a way is complete write it to a seperate file, if not write for next loop
+                                wayout = str(wayid) + '#' + ':'.join(finalnodes) + ':\n'
                                 if isAllComplete:
-                                    finalnodes=wayout.split('#')[1].split(':')
                                     completedways +=1
-                                    if finalnodes[0] <> finalnodes[-2]:     #start point is different to end point so its a line
-                                        builtlines.write(wayout+'\n')
+                                    if finalnodes[0] <> finalnodes[-1]:     #start point is different to end point so its a line
+                                        builtlines.write(wayout)
                                     else:
-                                        builtareas.write(wayout+'\n')       #its an area
+                                        builtareas.write(wayout)       #its an area
                                 else:
-                                    stillunbuiltways.write(wayout+'\n')
+                                    stillunbuiltways.write(wayout)
                         arcpy.AddMessage("Processed Ways="+str(completedways))
                         nodes.clear()
                 os.remove(scratch+'/unbuiltways.dat')
