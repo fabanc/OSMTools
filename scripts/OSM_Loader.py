@@ -641,15 +641,56 @@ arcpy.AddMessage("Step 6.5 --- %s seconds ---" % (time.time() - stepstarttime))
 stepstarttime=time.time()
 arcpy.AddMessage('Step 7/7')
 arcpy.AddMessage("joining attributes to way features")
+excluded_way_id_field = '{}.WAY_ID'.format(os.path.basename(waytagtab)).upper()
 arcpy.MakeFeatureLayer_management(wayfc, "tempway", "", "", "Shape_Length Shape_Length VISIBLE;Way_ID Way_ID VISIBLE")
 arcpy.AddJoin_management("tempway", "Way_ID", waytagtab, "Way_ID", "KEEP_COMMON")
-arcpy.CopyFeatures_management("tempway", finalwayfc, "", "0.05", "0.5", "5.0")
+fields = arcpy.ListFields("tempway")
+fieldMappings = arcpy.FieldMappings()
+for f in fields:
+    # Build field map by replacing alias name by base name
+    fieldName = f.baseName
+    if fieldName.upper() not in ['OBJECTID', 'SHAPE'] and f.name.upper() != excluded_way_id_field:
+        fieldMap = arcpy.FieldMap()
+        fieldMap.addInputField("tempway", f.name)
+        outputField = fieldMap.outputField
+        outputField.name = fieldName
+        outputField.aliasName = fieldName
+        fieldMap.outputField = outputField
+        fieldMappings.addFieldMap(fieldMap)
+
+arcpy.FeatureClassToFeatureClass_conversion(
+    in_features="tempway",
+    out_path=os.path.dirname(finalwayfc),
+    out_name=os.path.basename(finalwayfc),
+    field_mapping=fieldMappings
+)
+
 arcpy.Delete_management("tempway")
 arcpy.Delete_management(wayfc)
 arcpy.AddMessage("joining attributes to area features")
 arcpy.MakeFeatureLayer_management(areawayfc, "temparea", "", "", "Shape_Length Shape_Length VISIBLE;Way_ID Way_ID VISIBLE")
 arcpy.AddJoin_management("temparea", "Way_ID", waytagtab, "Way_ID", "KEEP_COMMON")
-arcpy.CopyFeatures_management("temparea", finalareawayfc, "", "0.05", "0.5", "5.0")
+fields = arcpy.ListFields("temparea")
+fieldMappings = arcpy.FieldMappings()
+for f in fields:
+    # Build field map by replacing alias name by base name
+    fieldName = f.baseName
+    if fieldName.upper() not in ['OBJECTID', 'SHAPE'] and f.name.upper() != excluded_way_id_field:
+        fieldMap = arcpy.FieldMap()
+        fieldMap.addInputField("temparea", f.name)
+        outputField = fieldMap.outputField
+        outputField.name = fieldName
+        outputField.aliasName = fieldName
+        fieldMap.outputField = outputField
+        fieldMappings.addFieldMap(fieldMap)
+
+arcpy.FeatureClassToFeatureClass_conversion(
+    in_features="temparea",
+    out_path=os.path.dirname(finalareawayfc),
+    out_name=os.path.basename(finalareawayfc),
+    field_mapping=fieldMappings
+)
+
 arcpy.Delete_management("temparea")
 arcpy.Delete_management(areawayfc)
 arcpy.Delete_management(waytagtab)
